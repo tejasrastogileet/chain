@@ -1,10 +1,6 @@
 import hashlib
 import time
 
-
-# --------------------------
-# BLOCK CLASS
-# --------------------------
 class Block:
     def __init__(self, index, data, previous_hash, difficulty=2):
         self.index = index
@@ -26,10 +22,6 @@ class Block:
                 return new_hash
             self.nonce += 1
 
-
-# --------------------------
-# BLOCKCHAIN CLASS
-# --------------------------
 class Blockchain:
     def __init__(self):
         self.chain = [self.create_genesis_block()]
@@ -45,36 +37,26 @@ class Blockchain:
         self.chain.append(new_block)
         return new_block
 
-    # Mining a block + reward system
     def mine_block(self, miner_address, difficulty=2):
         reward_data = f"Reward to {miner_address}: {self.mining_reward} coins"
         new_block = Block(len(self.chain), reward_data, self.chain[-1].hash, difficulty)
         self.chain.append(new_block)
-
         self.pending_rewards[miner_address] = \
             self.pending_rewards.get(miner_address, 0) + self.mining_reward
-
         return new_block
 
-    # Validation
     def is_chain_valid(self):
         for i in range(1, len(self.chain)):
             current = self.chain[i]
             previous = self.chain[i - 1]
-
-            # Check stored hash vs recomputed hash
             if current.hash != current.compute_hash():
                 print(f"❌ Invalid hash at block {i}")
                 return False
-
-            # Check chain linkage
             if current.previous_hash != previous.hash:
                 print(f"❌ Chain broken between block {i} and block {i-1}")
                 return False
-
         return True
 
-    # Helper to print chain
     def print_chain(self):
         for block in self.chain:
             print("----------------------------")
@@ -86,17 +68,11 @@ class Blockchain:
             print(f"Nonce: {block.nonce}")
             print("----------------------------")
 
-    # Reward printer
     def print_rewards(self):
         print("\n=== Miner Balances ===")
         for miner, balance in self.pending_rewards.items():
             print(f"{miner}: {balance} coins")
 
-
-
-# --------------------------
-# NODE CLASS (P2P Sync)
-# --------------------------
 class Node:
     def __init__(self, name):
         self.name = name
