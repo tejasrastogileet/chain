@@ -378,10 +378,10 @@
 
 <script type="text/babel">
     const { useState, useEffect } = React;
+    // Production: Render backend
+    const API_BASE = 'https://chain-backend-sia3.onrender.com';
     // Development: http://127.0.0.1:8000
-    // Production: Update to your deployed backend URL
-    const API_BASE = 'http://127.0.0.1:8000';
-    // const API_BASE = 'https://your-production-backend.com';
+    // const API_BASE = 'http://127.0.0.1:8000';
 
     // ---------------- Toast Component ----------------
     function Toast({ message, type, onClose }) {
