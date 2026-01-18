@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChainSmasher – Mini Blockchain Project</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+
+        :root {
+            --neon-blue: #00f0ff;
+            --neon-purple: #b820ff;
+            --neon-pink: #ff006e;
+            --dark-bg: #0a0a0f;
+            --dark-card: #141420;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: 
+                radial-gradient(ellipse at top left, rgba(0, 240, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at top right, rgba(184, 32, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom left, rgba(255, 0, 110, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(0, 240, 255, 0.06) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0f 0%, #1a0b2e 50%, #0a0a0f 100%);
+            background-attachment: fixed;
+            color: #e0e0ff;
+            overflow-x: hidden;
+            position: relative;
+            animation: backgroundFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundFloat {
+            0%, 100% {
+                background-position: 0% 0%, 100% 0%, 0% 100%, 100% 100%, center;
+            }
+            50% {
+                background-position: 10% 10%, 90% 10%, 10% 90%, 90% 90%, center;
+            }
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Glass effect */
+        .glass-panel {
+            background: rgba(20, 20, 32, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .glass-card {
+            background: rgba(20, 20, 32, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--neon-blue);
+            box-shadow: 
+                0 10px 40px rgba(0, 240, 255, 0.4),
+                0 0 20px rgba(184, 32, 255, 0.3);
+        }
+
+        /* Neon glow effects */
+        .neon-border {
+            border: 2px solid var(--neon-blue);
+            box-shadow: 
+                0 0 15px var(--neon-blue),
+                inset 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        .neon-text {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+        }
+
+        .neon-glow-blue {
+            box-shadow: 
+                0 0 20px rgba(0, 240, 255, 0.5),
+                0 0 40px rgba(0, 240, 255, 0.3);
+        }
+
+        .neon-glow-purple {
+            box-shadow: 
+                0 0 20px rgba(184, 32, 255, 0.5),
+                0 0 40px rgba(184, 32, 255, 0.3);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-blue), rgba(0, 240, 255, 0.7));
+            border: 2px solid var(--neon-blue);
+            color: #0a0a0f;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 30px var(--neon-blue);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--neon-purple);
+            color: var(--neon-purple);
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(184, 32, 255, 0.2);
+            box-shadow: 0 0 20px rgba(184, 32, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple), var(--neon-pink));
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s linear infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* Cyber divider */
+        .cyber-divider {
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                var(--neon-blue) 20%, 
+                var(--neon-purple) 50%, 
+                var(--neon-blue) 80%, 
+                transparent);
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        /* Glitch effect */
+        @keyframes glitch {
+            0%, 90%, 100% {
+                text-shadow: none;
+            }
+            92% {
+                text-shadow: 2px 0 var(--neon-blue), -2px 0 var(--neon-pink);
+            }
+            94% {
+                text-shadow: -2px 0 var(--neon-blue), 2px 0 var(--neon-pink);
+            }
+        }
+
+        .glitch-title {
+            animation: glitch 3s ease-in-out infinite;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Feature icons */
+        .feature-icon {
+            font-size: 3rem;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Mobile menu */
+        .mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .mobile-menu.active {
+            max-height: 500px;
+        }
+
+        /* Navbar */
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--neon-blue);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .nav-link:hover {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        /* Banner strip */
+        .banner-strip {
+            background: linear-gradient(90deg, 
+                rgba(0, 240, 255, 0.1), 
+                rgba(184, 32, 255, 0.1), 
+                rgba(0, 240, 255, 0.1));
+            border-top: 1px solid var(--neon-blue);
+            border-bottom: 1px solid var(--neon-purple);
+            box-shadow: 
+                inset 0 1px 10px rgba(0, 240, 255, 0.3),
+                inset 0 -1px 10px rgba(184, 32, 255, 0.3);
+        }
+
+        /* Showcase section */
+        .showcase-image {
+            border: 2px solid rgba(0, 240, 255, 0.3);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.05), rgba(184, 32, 255, 0.05));
+        }
+    </style>
+</head>
+<body>
+    <div class="relative z-10">
+        <!-- Navbar -->
+        <nav class="glass-panel fixed w-full top-0 z-50">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <!-- Logo -->
+                    <div class="flex items-center gap-3">
+                        <img src="logo.svg" alt="ChainSmasher Logo" class="h-10 w-10 object-contain">
+                        <h1 class="text-xl md:text-2xl font-bold font-['Orbitron'] neon-text">
+                            ChainSmasher
+                        </h1>
+                    </div>
+
+                    <!-- Desktop Navigation -->
+                    <div class="hidden md:flex items-center gap-8">
+                        <a href="index.html" class="nav-link text-cyan-300 hover:text-cyan-100 font-semibold">
+                            Home
+                        </a>
+                        <a href="visualizer.html" class="nav-link text-cyan-300 hover:text-cyan-100 font-semibold">
+                            Visualizer
+                        </a>
+                    </div>
+
+                    <!-- Mobile Menu Button -->
+                    <button onclick="toggleMenu()" class="md:hidden text-cyan-300 text-2xl">
+                        ☰
+                    </button>
+                </div>
+
+                <!-- Mobile Menu -->
+                <div id="mobileMenu" class="mobile-menu md:hidden">
+                    <div class="flex flex-col gap-4 mt-6 pb-4">
+                        <a href="index.html" class="text-cyan-300 hover:text-cyan-100 font-semibold text-center py-2">
+                            Home
+                        </a>
+                        <a href="visualizer.html" class="text-cyan-300 hover:text-cyan-100 font-semibold text-center py-2">
+                            Visualizer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="container mx-auto px-4 pt-32 pb-20 text-center">
+            <div class="max-w-5xl mx-auto">
+                <h1 class="glitch-title text-5xl md:text-7xl font-black mb-6 tracking-wider">
+                    MINI BLOCKCHAIN<br/>
+                    <span class="gradient-text">IMPLEMENTATION PROJECT</span>
+                </h1>
+                <div class="cyber-divider my-8 max-w-2xl mx-auto"></div>
+                <p class="text-xl md:text-2xl text-gray-300 mb-12 leading-relaxed max-w-3xl mx-auto">
+                    A futuristic demonstration of <span class="text-cyan-300 font-semibold">cryptographic hashing</span>, 
+                    <span class="text-purple-300 font-semibold">Proof-of-Work</span>, 
+                    <span class="text-pink-300 font-semibold">immutability</span>, and 
+                    <span class="text-cyan-300 font-semibold">node synchronization</span>.
+                </p>
+
+                <!-- CTA Buttons -->
+                <div class="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
+                    <a href="visualizer.html" class="btn-primary px-8 py-4 rounded-xl text-lg font-bold tracking-wider">
+                        🚀 OPEN VISUALIZER
+                    </a>
+                </div>
+
+                <!-- Hero Visual Element -->
+                <div class="neon-border rounded-3xl p-8 max-w-3xl mx-auto">
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="glass-card p-4 rounded-xl">
+                            <div class="text-4xl mb-2">🔗</div>
+                            <div class="text-cyan-400 font-bold text-2xl">15+</div>
+                            <div class="text-gray-400 text-sm">Blocks Mined</div>
+                        </div>
+                        <div class="glass-card p-4 rounded-xl">
+                            <div class="text-4xl mb-2">⛏️</div>
+                            <div class="text-purple-400 font-bold text-2xl">SHA-256</div>
+                            <div class="text-gray-400 text-sm">Encryption</div>
+                        </div>
+                        <div class="glass-card p-4 rounded-xl">
+                            <div class="text-4xl mb-2">🌐</div>
+                            <div class="text-pink-400 font-bold text-2xl">Multi-Node</div>
+                            <div class="text-gray-400 text-sm">P2P Network</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="container mx-auto px-4 py-20">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black font-['Orbitron'] mb-4">
+                    CORE <span class="gradient-text">FEATURES</span>
+                </h2>
+                <div class="cyber-divider my-6 max-w-md mx-auto"></div>
+                <p class="text-gray-400 text-lg">
+                    Explore the fundamental components of blockchain technology
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                <!-- Feature 1 -->
+                <div class="glass-card p-8 rounded-2xl text-center">
+                    <div class="feature-icon mb-4">🔗</div>
+                    <h3 class="text-xl font-bold text-cyan-300 mb-3 font-['Orbitron']">
+                        Block Structure & Hashing
+                    </h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Each block contains index, timestamp, data, previous hash, current hash, and nonce. 
+                        Cryptographically linked using SHA-256.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="glass-card p-8 rounded-2xl text-center">
+                    <div class="feature-icon mb-4">⚡</div>
+                    <h3 class="text-xl font-bold text-purple-300 mb-3 font-['Orbitron']">
+                        Proof-of-Work Mining
+                    </h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Adjustable difficulty mining with nonce calculation. 
+                        Miners compete to find valid hashes starting with required zeros.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="glass-card p-8 rounded-2xl text-center">
+                    <div class="feature-icon mb-4">🛡️</div>
+                    <h3 class="text-xl font-bold text-pink-300 mb-3 font-['Orbitron']">
+                        Tampering Detection
+                    </h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Real-time validation detects any unauthorized modifications. 
+                        Demonstrates blockchain's immutability and security features.
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="glass-card p-8 rounded-2xl text-center">
+                    <div class="feature-icon mb-4">🌐</div>
+                    <h3 class="text-xl font-bold text-cyan-300 mb-3 font-['Orbitron']">
+                        Node Synchronization
+                    </h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Multiple nodes maintain independent chains. 
+                        Sync using longest-chain rule for distributed consensus.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Project Showcase Section -->
+        <section class="container mx-auto px-4 py-20">
+            <div class="neon-border rounded-3xl p-8 md:p-12 max-w-6xl mx-auto">
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <!-- Left: Description -->
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-black font-['Orbitron'] mb-6">
+                            PROJECT <span class="gradient-text">OVERVIEW</span>
+                        </h2>
+                        <div class="space-y-4 text-gray-300">
+                            <p class="leading-relaxed">
+                                Built with <span class="text-cyan-300 font-semibold">Python FastAPI</span> for the backend 
+                                and <span class="text-purple-300 font-semibold">React with Tailwind CSS</span> for the frontend, 
+                                this project demonstrates a complete blockchain implementation from scratch.
+                            </p>
+                            <p class="leading-relaxed">
+                                Our custom blockchain engine uses <span class="text-pink-300 font-semibold">SHA-256 cryptographic hashing</span> 
+                                to ensure data integrity and immutability. Each block is securely linked through hash pointers, 
+                                creating a tamper-evident chain.
+                            </p>
+                            <p class="leading-relaxed">
+                                Features include <span class="text-cyan-300 font-semibold">adjustable difficulty mining</span>, 
+                                real-time validation, miner rewards tracking, 51% attack simulation, 
+                                and multi-node synchronization using the longest-chain consensus rule.
+                            </p>
+                        </div>
+
+                        <!-- Tech Stack Badges -->
+                        <div class="flex flex-wrap gap-3 mt-8">
+                            <span class="px-4 py-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 text-sm font-semibold">
+                                Python FastAPI
+                            </span>
+                            <span class="px-4 py-2 rounded-lg bg-purple-500/20 border border-purple-500/50 text-purple-300 text-sm font-semibold">
+                                React
+                            </span>
+                            <span class="px-4 py-2 rounded-lg bg-pink-500/20 border border-pink-500/50 text-pink-300 text-sm font-semibold">
+                                SHA-256
+                            </span>
+                            <span class="px-4 py-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 text-sm font-semibold">
+                                Tailwind CSS
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Visual Mockup -->
+                    <div>
+                        <div class="showcase-image p-8 aspect-square flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="text-8xl mb-6 animate-pulse">⛓️</div>
+                                <div class="space-y-3">
+                                    <div class="h-3 bg-gradient-to-r from-cyan-500 to-transparent rounded"></div>
+                                    <div class="h-3 bg-gradient-to-r from-purple-500 to-transparent rounded"></div>
+                                    <div class="h-3 bg-gradient-to-r from-pink-500 to-transparent rounded"></div>
+                                    <div class="h-3 bg-gradient-to-r from-cyan-500 to-transparent rounded"></div>
+                                </div>
+                                <p class="text-cyan-300 font-bold mt-6 font-['Orbitron']">
+                                    BLOCKCHAIN STRUCTURE
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ChainSmasher Identity Banner -->
+        <section class="banner-strip py-12">
+            <div class="container mx-auto px-4 text-center">
+                <p class="text-2xl md:text-3xl font-bold font-['Orbitron'] tracking-wider">
+                    <span class="gradient-text">
+                        WE BUILD SYSTEMS THAT GO BEYOND THEORY
+                    </span>
+                </p>
+                <p class="text-lg md:text-xl text-gray-300 mt-4 font-semibold tracking-wide">
+                    Real Code • Real Security • Real Blockchain
+                </p>
+            </div>
+        </section>
+
+        <!-- Call to Action Section -->
+        <section class="container mx-auto px-4 py-20 text-center">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-black font-['Orbitron'] mb-6">
+                    READY TO <span class="gradient-text">EXPLORE</span>?
+                </h2>
+                <p class="text-xl text-gray-300 mb-10">
+                    Launch the interactive visualizer to see blockchain in action, 
+                    or learn more about the team behind this project.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-6 justify-center">
+                    <a href="visualizer.html" class="btn-primary px-10 py-5 rounded-xl text-xl font-bold tracking-wider">
+                        🚀 LAUNCH VISUALIZER
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="border-t border-cyan-900/30 mt-20 glass-panel">
+            <div class="container mx-auto px-4 py-12">
+                <div class="max-w-6xl mx-auto">
+                    <!-- Footer Top -->
+                    <div class="grid md:grid-cols-3 gap-8 mb-8">
+                        <!-- Brand Section -->
+                        <div class="text-center md:text-left">
+                            <h3 class="text-2xl font-bold text-cyan-300 mb-3 font-['Orbitron']">
+                                CHAINSMASHER
+                            </h3>
+                            <p class="text-gray-400 text-sm leading-relaxed">
+                                Building secure, transparent, and decentralized blockchain systems.
+                            </p>
+                        </div>
+
+                        <!-- Quick Links -->
+                        <div class="text-center">
+                            <h4 class="text-lg font-semibold text-purple-300 mb-3 font-['Orbitron']">
+                                Quick Links
+                            </h4>
+                            <div class="flex flex-col gap-2">
+                                <a href="index.html" class="text-gray-400 hover:text-cyan-300 transition-colors text-sm">
+                                    🏠 Home
+                                </a>
+                                <a href="visualizer.html" class="text-gray-400 hover:text-cyan-300 transition-colors text-sm">
+                                    🔗 Blockchain Visualizer
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Footer Divider -->
+                    <div class="cyber-divider my-6"></div>
+
+                    <!-- Footer Bottom -->
+                    <div class="text-center">
+                        <p class="text-cyan-300 font-semibold text-base mb-2 font-['Orbitron']">
+                            🔐 DEVELOPED BY CHAINSMASHER
+                        </p>
+                        <p class="text-purple-400 text-sm mt-2">
+                            © 2025 All Rights Reserved • Secured by Cryptography
+                        </p>
+                        <div class="mt-4 flex justify-center gap-4 text-xs text-gray-600">
+                            <span>SHA-256 ENCRYPTED</span>
+                            <span>•</span>
+                            <span>PROOF-OF-WORK VERIFIED</span>
+                            <span>•</span>
+                            <span>BLOCKCHAIN SECURED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
+

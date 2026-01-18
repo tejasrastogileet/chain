@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Blockchain Visualizer</title>
+    <link rel="icon" type="image/png" href="logo.png" />
+
+    <!-- React + ReactDOM UMD -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+
+        :root {
+            --neon-blue: #00f0ff;
+            --neon-purple: #b820ff;
+            --neon-pink: #ff006e;
+            --dark-bg: #0a0a0f;
+            --dark-card: #141420;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: 
+                radial-gradient(ellipse at top left, rgba(0, 240, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at top right, rgba(184, 32, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom left, rgba(255, 0, 110, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(0, 240, 255, 0.06) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0f 0%, #1a0b2e 50%, #0a0a0f 100%);
+            background-attachment: fixed;
+            color: #e0e0ff;
+            overflow-x: hidden;
+            position: relative;
+            animation: backgroundFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundFloat {
+            0%, 100% {
+                background-position: 0% 0%, 100% 0%, 0% 100%, 100% 100%, center;
+            }
+            50% {
+                background-position: 10% 10%, 90% 10%, 10% 90%, 90% 90%, center;
+            }
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .glass-panel {
+            background: rgba(20, 20, 32, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .glass-soft {
+            background: rgba(20, 20, 32, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .block-card {
+            border-radius: 12px;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            background: rgba(20, 20, 32, 0.8);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .block-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .block-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--neon-blue);
+            box-shadow: 
+                0 10px 40px rgba(0, 240, 255, 0.4),
+                0 0 20px rgba(184, 32, 255, 0.3);
+        }
+
+        .block-card:hover::before {
+            opacity: 1;
+        }
+
+        .block-genesis {
+            background: rgba(20, 20, 32, 0.8);
+            border-color: var(--neon-purple);
+        }
+
+        .block-genesis::before {
+            background: linear-gradient(90deg, var(--neon-purple), var(--neon-pink));
+        }
+
+        .glow-pill {
+            border-radius: 999px;
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+        }
+
+        .loading-spinner {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 999px;
+            border-width: 3px;
+            border-style: solid;
+            border-color: rgba(0, 240, 255, 0.2);
+            border-top-color: var(--neon-blue);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .nav-glow {
+            background: rgba(20, 20, 32, 0.95);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+        }
+
+        .section-button-active {
+            background: linear-gradient(135deg, var(--neon-blue), rgba(0, 240, 255, 0.7));
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.4);
+            position: relative;
+            color: #0a0a0f !important;
+            font-weight: 700;
+        }
+
+        .section-button-active::after {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: #0a0a0f;
+            border-radius: 999px;
+        }
+
+        .section-button {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #a0a0d0;
+        }
+
+        .section-button:hover {
+            transform: translateX(4px);
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--neon-blue);
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            box-shadow: 0 0 10px currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        input, select {
+            background-color: rgba(20, 20, 32, 0.8) !important;
+            border: 1px solid rgba(0, 240, 255, 0.3) !important;
+            color: #e0e0ff !important;
+            transition: all 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--neon-blue) !important;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3) !important;
+        }
+
+        input::placeholder, select::placeholder {
+            color: #6a6a8a;
+        }
+
+        .soft-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .soft-scrollbar::-webkit-scrollbar-track {
+            background: rgba(20, 20, 32, 0.5);
+            border-radius: 999px;
+        }
+        .soft-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 240, 255, 0.3);
+            border-radius: 999px;
+        }
+        .soft-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-blue);
+        }
+
+        button {
+            font-weight: 600;
+            letter-spacing: 0.025em;
+        }
+
+        .status-valid {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), transparent);
+            border-color: #10b981 !important;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+
+        .status-invalid {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), transparent);
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+        }
+
+        .neon-text {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Override Tailwind colors for cyberpunk theme */
+        .text-slate-50, .text-slate-100, .text-slate-200 {
+            color: #e0e0ff !important;
+        }
+
+        .text-slate-300, .text-slate-400 {
+            color: #a0a0d0 !important;
+        }
+
+        .text-slate-500, .text-slate-600 {
+            color: #6a6a8a !important;
+        }
+
+        .text-indigo-400, .text-sky-400, .text-cyan-400 {
+            color: var(--neon-blue) !important;
+        }
+
+        .text-purple-300, .text-purple-400, .text-violet-400 {
+            color: var(--neon-purple) !important;
+        }
+
+        .text-pink-300, .text-pink-400 {
+            color: var(--neon-pink) !important;
+        }
+
+        .text-emerald-400 {
+            color: #10b981 !important;
+        }
+
+        .text-orange-400 {
+            color: #f59e0b !important;
+        }
+
+        .text-red-400, .text-red-500 {
+            color: #ef4444 !important;
+        }
+
+        .bg-slate-700, .bg-slate-800, .bg-slate-900, .border-slate-700, .border-slate-800 {
+            background-color: rgba(20, 20, 32, 0.5) !important;
+            border-color: rgba(0, 240, 255, 0.2) !important;
+        }
+
+        /* Button styles */
+        .bg-gradient-to-r.from-indigo-600,
+        .bg-gradient-to-r.from-sky-600,
+        button[class*="indigo"] {
+            background: linear-gradient(135deg, var(--neon-blue), rgba(0, 240, 255, 0.7)) !important;
+            color: #0a0a0f !important;
+            border: 2px solid var(--neon-blue);
+            font-weight: bold;
+        }
+
+        .bg-gradient-to-r.from-emerald-600 {
+            background: linear-gradient(135deg, #10b981, rgba(16, 185, 129, 0.7)) !important;
+            color: #0a0a0f !important;
+            border: 2px solid #10b981;
+        }
+
+        .bg-gradient-to-r.from-orange-600 {
+            background: linear-gradient(135deg, #f59e0b, rgba(245, 158, 11, 0.7)) !important;
+            color: #0a0a0f !important;
+            border: 2px solid #f59e0b;
+        }
+
+        .bg-gradient-to-r.from-red-600 {
+            background: linear-gradient(135deg, #ef4444, rgba(239, 68, 68, 0.7)) !important;
+            color: #fff !important;
+            border: 2px solid #ef4444;
+        }
+
+        .bg-gradient-to-r.from-purple-600 {
+            background: linear-gradient(135deg, var(--neon-purple), rgba(184, 32, 255, 0.7)) !important;
+            color: #0a0a0f !important;
+            border: 2px solid var(--neon-purple);
+        }
+
+        button:hover {
+            box-shadow: 0 0 20px currentColor !important;
+            transform: translateY(-2px);
+        }
+
+        /* Glass panels dark background */
+        .glass-panel, .glass-soft {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useEffect } = React;
+    // Development: http://127.0.0.1:8000
+    // Production: Update to your deployed backend URL
+    const API_BASE = 'http://127.0.0.1:8000';
+    // const API_BASE = 'https://your-production-backend.com';
+
+    // ---------------- Toast Component ----------------
+    function Toast({ message, type, onClose }) {
+        useEffect(() => {
+            const timer = setTimeout(onClose, 3500);
+            return () => clearTimeout(timer);
+        }, [onClose]);
+
+        const colorClass =
+            type === 'success'
+                ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 border-emerald-400'
+                : type === 'error'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 border-red-400'
+                    : 'bg-gradient-to-r from-indigo-500 to-indigo-600 border-indigo-400';
+
+        return (
+            <div className="fixed top-5 right-5 z-50 max-w-md">
+                <div
+                    className={`toast border ${colorClass} text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3`}
+                >
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/20">
+                        {type === 'success' && <span className="text-xl">✓</span>}
+                        {type === 'error' && <span className="text-xl">✕</span>}
+                        {type === 'info' && <span className="text-xl">ℹ</span>}
+                    </div>
+                    <div className="flex-1 text-sm font-semibold">{message}</div>
+                    <button
+                        onClick={onClose}
+                        className="ml-2 text-xs font-bold uppercase tracking-wide text-white/80 hover:text-white transition"
+                    >
+                        ✕
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ---------------- Block Card ----------------
+    function BlockCard({ block, isGenesis }) {
+        return (
+            <div className={`block-card p-5 ${isGenesis ? 'block-genesis' : ''}`}>
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="badge-dot bg-emerald-400"></div>
+                        <div className="flex flex-col">
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                Block #{block.index}
+                            </span>
+                            {isGenesis && (
+                                <span className="text-xs text-purple-400 font-semibold tracking-wide mt-0.5">
+                                    Genesis Block
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    <span className="text-xs px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-300 font-medium">
+                        Nonce: <span className="font-mono font-semibold">{block.nonce}</span>
+                    </span>
+                </div>
+
+                <div className="space-y-2.5">
+                    <p className="text-sm text-slate-200 font-medium">
+                        <span className="text-xs uppercase tracking-wider text-slate-500 mr-2 font-semibold">Data:</span>
+                        {block.data}
+                    </p>
+                    <p className="text-xs font-mono text-indigo-400 break-all leading-relaxed">
+                        <span className="text-slate-500 font-semibold">Hash:</span> {block.hash.substring(0, 20)}...
+                    </p>
+                    <p className="text-xs font-mono text-slate-500 break-all leading-relaxed">
+                        <span className="text-slate-600 font-semibold">Prev:</span> {block.previous_hash.substring(0, 20)}...
+                    </p>
+                    <p className="text-xs text-slate-500 mt-2 font-medium">
+                        {new Date(block.timestamp * 1000).toLocaleString()}
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // ---------------- Global Blockchain Section ----------------
+    function GlobalBlockchain({ showToast }) {
+        const [chainInfo, setChainInfo] = useState({
+            valid: true,
+            error: null,
+            length: 0,
+            chain: []
+        });
+        const [loading, setLoading] = useState(false);
+        const [minerAddress, setMinerAddress] = useState('');
+        const [miningDifficulty, setMiningDifficulty] = useState(3);
+        const [blockData, setBlockData] = useState('');
+        const [dataDifficulty, setDataDifficulty] = useState(3);
+
+        const fetchChain = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch(`${API_BASE}/chain`);
+                const data = await response.json();
+                setChainInfo(data);
+            } catch (error) {
+                showToast('Failed to fetch chain: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        useEffect(() => {
+            fetchChain();
+        }, []);
+
+        const mineRewardBlock = async () => {
+            if (!minerAddress.trim()) {
+                showToast('Please enter a miner address.', 'error');
+                return;
+            }
+            try {
+                setLoading(true);
+                const res = await fetch(`${API_BASE}/mine-reward`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        miner_address: minerAddress,
+                        difficulty: miningDifficulty
+                    })
+                });
+                const data = await res.json();
+                await fetchChain();
+                showToast(data.message || 'Reward block mined successfully!', 'success');
+            } catch (error) {
+                showToast('Failed to mine reward block: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const addDataBlock = async () => {
+            if (!blockData.trim()) {
+                showToast('Please enter block data.', 'error');
+                return;
+            }
+            try {
+                setLoading(true);
+                const res = await fetch(`${API_BASE}/add-block`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        data: blockData,
+                        difficulty: dataDifficulty
+                    })
+                });
+                const data = await res.json();
+                await fetchChain();
+                setBlockData('');
+                showToast(data.message || 'Data block added successfully!', 'success');
+            } catch (error) {
+                showToast('Failed to add data block: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const resetChain = async () => {
+            if (!confirm('Reset blockchain to only the genesis block?')) return;
+            try {
+                setLoading(true);
+                await fetch(`${API_BASE}/reset`, { method: 'POST' });
+                await fetchChain();
+                showToast('Blockchain reset to genesis block.', 'success');
+            } catch (error) {
+                showToast('Failed to reset blockchain: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const hasBlocks = chainInfo.chain && chainInfo.chain.length > 0;
+
+        return (
+            <div className="space-y-6">
+                {/* Chain Status */}
+                <div className={`glass-soft px-5 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border ${
+                    chainInfo.valid ? 'status-valid' : 'status-invalid'
+                }`}>
+                    <div className="flex items-center gap-3">
+                        <div
+                            className={`w-3 h-3 rounded-full ${
+                                chainInfo.valid
+                                    ? 'bg-emerald-400'
+                                    : 'bg-red-500'
+                            }`}
+                        />
+                        <div>
+                            <p
+                                className={`text-sm font-bold ${
+                                    chainInfo.valid ? 'text-emerald-400' : 'text-red-400'
+                                }`}
+                            >
+                                {chainInfo.valid ? '✓ Valid & Consistent' : '✕ Invalid / Tampered'}
+                            </p>
+                            {chainInfo.error && (
+                                <p className="text-xs text-red-400 mt-1 font-medium">{chainInfo.error}</p>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="glow-pill px-4 py-2 flex items-center gap-2 text-xs">
+                            <span className="text-slate-400 font-semibold">Blocks</span>
+                            <span className="font-bold text-indigo-400 text-base">{chainInfo.length}</span>
+                        </div>
+                        {loading && (
+                            <div className="flex items-center gap-2 text-xs text-slate-400">
+                                <div className="loading-spinner"></div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Mining + Add Data Forms */}
+                <div className="grid gap-5 md:grid-cols-2">
+                    {/* Mine Reward Block */}
+                    <div className="glass-soft p-6" style={{border: '1px solid rgba(0, 240, 255, 0.3)'}}>
+                        <h3 className="text-sm font-bold mb-1 tracking-wider uppercase" style={{color: '#00f0ff'}}>
+                            ⛏ Mine Reward Block
+                        </h3>
+                        <p className="text-xs mb-4" style={{color: '#a0a0d0'}}>
+                            Simulate a miner solving Proof-of-Work and earning a reward.
+                        </p>
+                        <div className="space-y-3">
+                            <input
+                                type="text"
+                                placeholder="Miner Address (e.g. Malik_Miner01)"
+                                value={minerAddress}
+                                onChange={(e) => setMinerAddress(e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/70"
+                            />
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="6"
+                                    placeholder="Difficulty"
+                                    value={miningDifficulty}
+                                    onChange={(e) => setMiningDifficulty(Number(e.target.value))}
+                                    className="w-28 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/70"
+                                />
+                                <button
+                                    onClick={mineRewardBlock}
+                                    disabled={loading}
+                                    className={`flex-1 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all ${
+                                        loading
+                                            ? 'bg-slate-700 cursor-not-allowed opacity-60'
+                                            : 'bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 shadow-lg hover:shadow-indigo-500/50'
+                                    }`}
+                                >
+                                    {loading ? 'Mining...' : '⛏ Mine Block'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Add Data Block */}
+                    <div className="glass-soft p-6 border border-slate-700">
+                        <h3 className="text-sm font-bold text-emerald-400 mb-1 tracking-wider uppercase">
+                            + Add Data Block
+                        </h3>
+                        <p className="text-xs text-slate-400 mb-4">
+                            Add a normal data block to the chain to simulate transactions.
+                        </p>
+                        <div className="space-y-3">
+                            <input
+                                type="text"
+                                placeholder="Block Data (e.g. Tx from A → B: 5 coins)"
+                                value={blockData}
+                                onChange={(e) => setBlockData(e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/70"
+                            />
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="6"
+                                    placeholder="Difficulty"
+                                    value={dataDifficulty}
+                                    onChange={(e) => setDataDifficulty(Number(e.target.value))}
+                                    className="w-28 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/70"
+                                />
+                                <button
+                                    onClick={addDataBlock}
+                                    disabled={loading}
+                                    className={`flex-1 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all ${
+                                        loading
+                                            ? 'bg-slate-700 cursor-not-allowed opacity-60'
+                                            : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-lg hover:shadow-emerald-500/50'
+                                    }`}
+                                >
+                                    + Add Block
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Utility Buttons */}
+                <div className="flex flex-wrap gap-3">
+                    <button
+                        onClick={fetchChain}
+                        disabled={loading}
+                        className="px-5 py-2.5 rounded-lg text-xs font-bold tracking-wider bg-slate-800 text-slate-300 border border-slate-700 hover:border-indigo-500 hover:text-indigo-400 hover:bg-slate-700 transition-all disabled:opacity-60"
+                    >
+                        ⟳ Refresh Chain
+                    </button>
+                    <button
+                        onClick={resetChain}
+                        disabled={loading}
+                        className="px-5 py-2.5 rounded-lg text-xs font-bold tracking-wider bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-500 hover:to-red-400 shadow-lg hover:shadow-red-500/50 transition-all disabled:opacity-60"
+                    >
+                        ↻ Reset Blockchain
+                    </button>
+                </div>
+
+                {/* Blockchain Display */}
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base font-bold tracking-wide uppercase text-slate-200">
+                            🔗 Blockchain View
+                        </h3>
+                        <span className="text-xs text-slate-500 font-medium">
+                            {chainInfo.chain.length} {chainInfo.chain.length === 1 ? 'Block' : 'Blocks'}
+                        </span>
+                    </div>
+                    <div className="soft-scrollbar overflow-x-auto">
+                        {loading && !hasBlocks ? (
+                            <div className="flex justify-center items-center py-16">
+                                <div className="loading-spinner"></div>
+                            </div>
+                        ) : hasBlocks ? (
+                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                {chainInfo.chain.map((block) => (
+                                    <BlockCard
+                                        key={block.index}
+                                        block={block}
+                                        isGenesis={block.index === 0}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="glass-soft p-8 text-center text-slate-400 text-sm border border-slate-700/60">
+                                No blocks yet — try mining or adding a data block.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ---------------- Tampering & 51% Attack Section ----------------
+    function TamperingSection({ showToast }) {
+        const [blockIndex, setBlockIndex] = useState(1);
+        const [newData, setNewData] = useState('');
+        const [validity, setValidity] = useState({ valid: true, error: null });
+        const [loading, setLoading] = useState(false);
+
+        const checkValidity = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/validate`);
+                const data = await res.json();
+                setValidity(data);
+            } catch (error) {
+                showToast('Failed to check chain validity: ' + error.message, 'error');
+            }
+        };
+
+        useEffect(() => {
+            checkValidity();
+        }, []);
+
+        const tamperBlock = async () => {
+            if (!newData.trim()) {
+                showToast('Please enter new malicious data.', 'error');
+                return;
+            }
+            try {
+                setLoading(true);
+                await fetch(`${API_BASE}/tamper`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        index: blockIndex,
+                        new_data: newData
+                    })
+                });
+                await checkValidity();
+                setNewData('');
+                showToast('Block tampered. Observe how the chain becomes invalid.', 'info');
+            } catch (error) {
+                showToast('Failed to tamper block: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const simulateAttack = async () => {
+            if (!confirm('Simulate 51% attack? This will recompute hashes from block 1 onward.')) return;
+            try {
+                setLoading(true);
+                await fetch(`${API_BASE}/attack-51`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        start_index: 1
+                    })
+                });
+                await checkValidity();
+                showToast('51% attack simulated. The chain may appear valid again.', 'info');
+            } catch (error) {
+                showToast('Failed to simulate 51% attack: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        return (
+            <div className="space-y-6">
+                {/* Validity Badge */}
+                <div className={`glass-soft px-5 py-4 border flex items-center justify-between gap-4 ${
+                    validity.valid ? 'status-valid' : 'status-invalid'
+                }`}>
+                    <div className="flex items-center gap-3">
+                        <div
+                            className={`w-3 h-3 rounded-full ${
+                                validity.valid
+                                    ? 'bg-emerald-400'
+                                    : 'bg-red-500'
+                            }`}
+                        />
+                        <div>
+                            <p
+                                className={`text-sm font-bold ${
+                                    validity.valid ? 'text-emerald-400' : 'text-red-400'
+                                }`}
+                            >
+                                {validity.valid
+                                    ? '✓ Chain currently valid'
+                                    : '✕ Chain broken / hashes no longer consistent'}
+                            </p>
+                            {validity.error && (
+                                <p className="text-xs text-red-400 mt-1 font-medium">{validity.error}</p>
+                            )}
+                        </div>
+                    </div>
+                    <button
+                        onClick={checkValidity}
+                        disabled={loading}
+                        className="px-5 py-2.5 rounded-lg text-xs font-bold bg-slate-800 border border-slate-700 text-slate-300 hover:border-indigo-500 hover:text-indigo-400 transition-all disabled:opacity-60"
+                    >
+                        ⟳ Refresh
+                    </button>
+                </div>
+
+                {/* Tamper Form */}
+                <div className="glass-soft p-6 border border-slate-700">
+                    <h3 className="text-sm font-bold text-orange-400 mb-1 tracking-wider uppercase">
+                        ⚠ Tamper With a Block
+                    </h3>
+                    <p className="text-xs text-slate-400 mb-4">
+                        Modify the data of an existing block. Its hash changes and the blockchain becomes invalid.
+                    </p>
+                    <div className="grid gap-3 md:grid-cols-3">
+                        <input
+                            type="number"
+                            min="1"
+                            placeholder="Block Index (e.g. 1)"
+                            value={blockIndex}
+                            onChange={(e) => setBlockIndex(Number(e.target.value))}
+                            className="px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/70"
+                        />
+                        <input
+                            type="text"
+                            placeholder="New malicious data..."
+                            value={newData}
+                            onChange={(e) => setNewData(e.target.value)}
+                            className="px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/70"
+                        />
+                        <button
+                            onClick={tamperBlock}
+                            disabled={loading}
+                            className={`px-4 py-3 rounded-xl text-sm font-bold text-white transition-all ${
+                                loading
+                                    ? 'bg-slate-700 cursor-not-allowed opacity-60'
+                                    : 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 shadow-lg hover:shadow-orange-500/50'
+                            }`}
+                        >
+                            ⚠ Tamper Block
+                        </button>
+                    </div>
+                </div>
+
+                {/* 51% Attack */}
+                <div className="glass-soft p-6 border border-slate-700">
+                    <h3 className="text-sm font-bold text-red-400 mb-1 tracking-wider uppercase">
+                        🔥 Simulate 51% Attack
+                    </h3>
+                    <p className="text-xs text-slate-400 mb-4">
+                        Recomputes the hashes from a specific index onwards to demonstrate how a majority attacker can
+                        rewrite history and restore apparent validity.
+                    </p>
+                    <button
+                        onClick={simulateAttack}
+                        disabled={loading}
+                        className={`px-5 py-3 rounded-xl text-sm font-bold text-white transition-all ${
+                            loading
+                                ? 'bg-slate-700 cursor-not-allowed opacity-60'
+                                : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 shadow-lg hover:shadow-red-500/50'
+                        }`}
+                    >
+                        🔥 Simulate Attack
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ---------------- Rewards Section ----------------
+    function RewardsSection({ showToast }) {
+        const [rewards, setRewards] = useState({});
+        const [loading, setLoading] = useState(false);
+
+        const fetchRewards = async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`${API_BASE}/rewards`);
+                const data = await res.json();
+                setRewards(data.rewards || {});
+            } catch (error) {
+                showToast('Failed to fetch miner rewards: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        useEffect(() => {
+            fetchRewards();
+        }, []);
+
+        const hasRewards = Object.keys(rewards || {}).length > 0;
+
+        return (
+            <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-base font-bold tracking-wide uppercase text-slate-200">
+                            💰 Miner Rewards
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-1">
+                            Each successfully mined reward block adds 50 coins to the miner&apos;s balance.
+                        </p>
+                    </div>
+                    <button
+                        onClick={fetchRewards}
+                        disabled={loading}
+                        className="px-5 py-2.5 rounded-lg text-xs font-bold bg-slate-800 border border-slate-700 text-slate-300 hover:border-emerald-500 hover:text-emerald-400 transition-all disabled:opacity-60"
+                    >
+                        ⟳ Refresh
+                    </button>
+                </div>
+
+                <div className="glass-soft overflow-hidden border border-slate-700">
+                    <table className="min-w-full text-sm">
+                        <thead className="bg-slate-900">
+                            <tr>
+                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
+                                    Miner Address
+                                </th>
+                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
+                                    Balance (coins)
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {!hasRewards ? (
+                                <tr>
+                                    <td
+                                        colSpan="2"
+                                        className="px-6 py-8 text-center text-xs text-slate-500 font-medium"
+                                    >
+                                        No rewards yet. Start mining blocks in the Global Blockchain section.
+                                    </td>
+                                </tr>
+                            ) : (
+                                Object.entries(rewards).map(([miner, balance]) => (
+                                    <tr key={miner} className="border-t border-slate-800 hover:bg-slate-800/50 transition">
+                                        <td className="px-6 py-4 text-slate-200 font-medium">{miner}</td>
+                                        <td className="px-6 py-4 text-emerald-400 font-bold text-base">{balance}</td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    }
+
+    // ---------------- Nodes & Sync Section ----------------
+    function NodesSection({ showToast }) {
+        const [nodes, setNodes] = useState({});
+        const [loading, setLoading] = useState(false);
+        const [newNodeName, setNewNodeName] = useState('');
+        const [selectedNode, setSelectedNode] = useState('');
+        const [minerAddress, setMinerAddress] = useState('');
+        const [difficulty, setDifficulty] = useState(3);
+        const [targetNode, setTargetNode] = useState('');
+        const [fromNode, setFromNode] = useState('');
+
+        const fetchNodes = async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`${API_BASE}/nodes`);
+                const data = await res.json();
+                // backend returns { "Node1": {...}, "Node2": {...} }
+                setNodes(data);
+            } catch (error) {
+                showToast('Failed to fetch nodes: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        useEffect(() => {
+            fetchNodes();
+        }, []);
+
+        const createNode = async () => {
+            if (!newNodeName.trim()) {
+                showToast('Please enter a node name.', 'error');
+                return;
+            }
+            try {
+                setLoading(true);
+                await fetch(`${API_BASE}/nodes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newNodeName.trim() })
+                });
+                setNewNodeName('');
+                await fetchNodes();
+                showToast('Node created successfully.', 'success');
+            } catch (error) {
+                showToast('Failed to create node: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const mineOnNode = async () => {
+            if (!selectedNode || !minerAddress.trim()) {
+                showToast('Select a node and enter miner address.', 'error');
+                return;
+            }
+            try {
+                setLoading(true);
+                await fetch(`${API_BASE}/nodes/mine`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        node_name: selectedNode,
+                        miner_address: minerAddress.trim(),
+                        difficulty
+                    })
+                });
+                await fetchNodes();
+                showToast(`Mined reward block on ${selectedNode}.`, 'success');
+            } catch (error) {
+                showToast('Failed to mine on node: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const syncNodes = async () => {
+            if (!targetNode || !fromNode) {
+                showToast('Select both target and source nodes.', 'error');
+                return;
+            }
+            if (targetNode === fromNode) {
+                showToast('Target and source must be different nodes.', 'error');
+                return;
+            }
+            try {
+                setLoading(true);
+                const res = await fetch(`${API_BASE}/nodes/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_node: targetNode,
+                        from_node: fromNode
+                    })
+                });
+                const data = await res.json();
+                await fetchNodes();
+                if (data.error) {
+                    showToast(data.error, 'error');
+                } else if (data.synced) {
+                    showToast(`Synced ${targetNode} from ${fromNode}.`, 'success');
+                } else {
+                    showToast('No sync applied (target already has equal or longer valid chain).', 'info');
+                }
+            } catch (error) {
+                showToast('Failed to sync nodes: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const nodeNames = Object.keys(nodes || {});
+
+        return (
+            <div className="space-y-6">
+                {/* Create Node */}
+                <div className="glass-soft p-6 border border-slate-700">
+                    <h3 className="text-sm font-bold text-indigo-400 mb-1 tracking-wider uppercase">
+                        🌐 Create Node
+                    </h3>
+                    <p className="text-xs text-slate-400 mb-4">
+                        Each node maintains its own blockchain and can later synchronize using the longest-chain rule.
+                    </p>
+                    <div className="flex flex-col md:flex-row gap-3">
+                        <input
+                            type="text"
+                            placeholder="Node Name (e.g. Node_A, Node_B)"
+                            value={newNodeName}
+                            onChange={(e) => setNewNodeName(e.target.value)}
+                            className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/70"
+                        />
+                        <button
+                            onClick={createNode}
+                            disabled={loading}
+                            className="px-5 py-3 rounded-xl text-sm font-bold text-white transition-all bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg hover:shadow-indigo-500/50 disabled:opacity-60"
+                        >
+                            + Create Node
+                        </button>
+                    </div>
+                </div>
+
+                {/* Mine on Node */}
+                <div className="glass-soft p-6 border border-slate-700">
+                    <h3 className="text-sm font-bold text-emerald-400 mb-1 tracking-wider uppercase">
+                        ⛏ Mine on Specific Node
+                    </h3>
+                    <p className="text-xs text-slate-400 mb-4">
+                        Select a node to mine a reward block on its personal blockchain.
+                    </p>
+                    <div className="grid gap-3 md:grid-cols-4">
+                        <select
+                            value={selectedNode}
+                            onChange={(e) => setSelectedNode(e.target.value)}
+                            className="px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/70"
+                        >
+                            <option value="">Select Node</option>
+                            {nodeNames.map((name) => (
+                                <option key={name} value={name}>
+                                    {name}
+                                </option>
+                            ))}
+                        </select>
+                        <input
+                            type="text"
+                            placeholder="Miner Address"
+                            value={minerAddress}
+                            onChange={(e) => setMinerAddress(e.target.value)}
+                            className="px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/70"
+                        />
+                        <input
+                            type="number"
+                            min="1"
+                            max="6"
+                            placeholder="Difficulty"
+                            value={difficulty}
+                            onChange={(e) => setDifficulty(Number(e.target.value))}
+                            className="px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/70"
+                        />
+                        <button
+                            onClick={mineOnNode}
+                            disabled={loading}
+                            className="px-4 py-3 rounded-xl text-sm font-bold text-white transition-all bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-lg hover:shadow-emerald-500/50 disabled:opacity-60"
+                        >
+                            ⛏ Mine
+                        </button>
+                    </div>
+                </div>
+
+                {/* Sync Nodes */}
+                <div className="glass-soft p-6 border border-slate-700">
+                    <h3 className="text-sm font-bold text-purple-400 mb-1 tracking-wider uppercase">
+                        🔄 Sync Nodes (Longest-Chain Rule)
+                    </h3>
+                    <p className="text-xs text-slate-400 mb-4">
+                        Synchronize a target node with another node that has a longer valid chain.
+                    </p>
+                    <div className="grid gap-3 md:grid-cols-3">
+                        <select
+                            value={targetNode}
+                            onChange={(e) => setTargetNode(e.target.value)}
+                            className="px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/70"
+                        >
+                            <option value="">Target Node</option>
+                            {nodeNames.map((name) => (
+                                <option key={name} value={name}>
+                                    {name}
+                                </option>
+                            ))}
+                        </select>
+                        <select
+                            value={fromNode}
+                            onChange={(e) => setFromNode(e.target.value)}
+                            className="px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/70"
+                        >
+                            <option value="">Source Node</option>
+                            {nodeNames.map((name) => (
+                                <option key={name} value={name}>
+                                    {name}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={syncNodes}
+                            disabled={loading}
+                            className="px-4 py-3 rounded-xl text-sm font-bold text-white transition-all bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 shadow-lg hover:shadow-purple-500/50 disabled:opacity-60"
+                        >
+                            🔄 Sync
+                        </button>
+                    </div>
+                </div>
+
+                {/* Nodes Overview */}
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base font-bold tracking-wide uppercase text-slate-200">
+                            📊 Node Overview
+                        </h3>
+                        <button
+                            onClick={fetchNodes}
+                            disabled={loading}
+                            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-slate-800 border border-slate-700 text-slate-300 hover:border-indigo-500 hover:text-indigo-400 transition-all disabled:opacity-60"
+                        >
+                            ⟳ Refresh
+                        </button>
+                    </div>
+                    {nodeNames.length === 0 ? (
+                        <div className="glass-soft p-8 text-center text-sm text-slate-400 font-medium border border-slate-700">
+                            No nodes created yet. Start by adding a few nodes and mining on them.
+                        </div>
+                    ) : (
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {nodeNames.map((nodeName) => {
+                                const node = nodes[nodeName];
+                                const chain = node?.chain || [];
+                                const lastBlock = chain[chain.length - 1];
+                                return (
+                                    <div
+                                        key={nodeName}
+                                        className="glass-soft p-5 border border-slate-700 flex flex-col gap-3 hover:border-indigo-500 transition-all"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-bold text-slate-100">
+                                                💻 {nodeName}
+                                            </span>
+                                            <span className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-semibold">
+                                                {chain.length} {chain.length === 1 ? 'Block' : 'Blocks'}
+                                            </span>
+                                        </div>
+                                        {lastBlock && (
+                                            <p className="text-xs font-mono text-indigo-400 break-all">
+                                                <span className="text-slate-500 font-semibold">Hash:</span>{' '}
+                                                {lastBlock.hash.substring(0, 20)}...
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-slate-500 font-medium">
+                                            Miners: {Object.keys(node.rewards || {}).length}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // ---------------- Main App ----------------
+    function App() {
+        const [activeSection, setActiveSection] = useState('blockchain');
+        const [toast, setToast] = useState(null);
+
+        const showToast = (message, type = 'info') => {
+            setToast({ message, type });
+        };
+
+        const closeToast = () => {
+            setToast(null);
+        };
+
+        return (
+            <div className="min-h-screen">
+                {toast && (
+                    <Toast
+                        message={toast.message}
+                        type={toast.type}
+                        onClose={closeToast}
+                    />
+                )}
+
+                {/* Navbar */}
+                <nav className="nav-glow sticky top-0 z-30">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-16">
+                            <div className="flex items-center gap-4">
+                                <img src="logo.svg" alt="ChainSmasher Logo" className="h-10 w-10 object-contain" />
+                                <div>
+                                    <h1 className="text-xl font-bold tracking-wide neon-text" style={{fontFamily: 'Orbitron, sans-serif'}}>
+                                        ChainSmasher
+                                    </h1>
+                                    <p className="text-xs text-cyan-300 font-medium">
+                                        Blockchain Visualizer
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-6">
+                                <a
+                                    href="index.html"
+                                    className="hidden md:block text-sm font-semibold text-cyan-300 hover:text-cyan-100 transition-all"
+                                >
+                                    🏠 Home
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+
+                {/* Main Layout */}
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+                    <div className="flex flex-col lg:flex-row gap-6">
+                        {/* Sidebar */}
+                        <aside className="lg:w-64 flex-shrink-0">
+                            <div className="glass-panel overflow-hidden">
+                                <div className="px-5 py-4 border-b border-slate-700">
+                                    <p className="text-xs uppercase tracking-wider text-slate-400 font-bold">
+                                        Navigation
+                                    </p>
+                                </div>
+                                <nav className="p-3 space-y-1.5">
+                                    <button
+                                        onClick={() => setActiveSection('blockchain')}
+                                        className={`w-full text-left px-4 py-3 rounded-lg text-sm font-semibold flex items-center gap-3 section-button ${
+                                            activeSection === 'blockchain'
+                                                ? 'section-button-active text-white'
+                                                : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800'
+                                        }`}
+                                    >
+                                        <span className="text-base">📊</span>
+                                        <span>Global Blockchain</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveSection('tampering')}
+                                        className={`w-full text-left px-4 py-3 rounded-lg text-sm font-semibold flex items-center gap-3 section-button ${
+                                            activeSection === 'tampering'
+                                                ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-lg shadow-orange-500/30'
+                                                : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800'
+                                        }`}
+                                    >
+                                        <span className="text-base">⚠️</span>
+                                        <span>Tampering & Attacks</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveSection('rewards')}
+                                        className={`w-full text-left px-4 py-3 rounded-lg text-sm font-semibold flex items-center gap-3 section-button ${
+                                            activeSection === 'rewards'
+                                                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                                                : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800'
+                                        }`}
+                                    >
+                                        <span className="text-base">💰</span>
+                                        <span>Miner Rewards</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveSection('nodes')}
+                                        className={`w-full text-left px-4 py-3 rounded-lg text-sm font-semibold flex items-center gap-3 section-button ${
+                                            activeSection === 'nodes'
+                                                ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-500/30'
+                                                : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800'
+                                        }`}
+                                    >
+                                        <span className="text-base">🌐</span>
+                                        <span>Nodes & Sync</span>
+                                    </button>
+                                </nav>
+                            </div>
+                        </aside>
+
+                        {/* Content */}
+                        <section className="flex-1">
+                            <div className="glass-panel p-5 md:p-6">
+                                {activeSection === 'blockchain' && (
+                                    <GlobalBlockchain showToast={showToast} />
+                                )}
+                                {activeSection === 'tampering' && (
+                                    <TamperingSection showToast={showToast} />
+                                )}
+                                {activeSection === 'rewards' && (
+                                    <RewardsSection showToast={showToast} />
+                                )}
+                                {activeSection === 'nodes' && (
+                                    <NodesSection showToast={showToast} />
+                                )}
+                            </div>
+                        </section>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+</body>
+</html>
